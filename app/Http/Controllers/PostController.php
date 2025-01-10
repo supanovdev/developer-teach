@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePostRequest;
 use App\Models\Post;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
@@ -28,27 +28,58 @@ class PostController extends Controller
         return view('posts.create');
     }
 
-
-
     public function store(StorePostRequest $request)
     {
-        $path = $request->file('photo')->store('post-photos');
-
-        dd($path);
+        if ($request->hasFile('photo')) {
+            $name = $request->file('photo')->getClientOriginalName();
+            $path = $request->file('photo')->storeAs('post-photos', $name);
+        }
 
         $post = Post::create([
             'title' => $request->title,
             'short_content' => $request->short_content,
             'content' => $request->content,
-            'photo' => $path
+            'photo' => $path ?? null,
         ]);
 
         return redirect()->route('posts.index');
     }
 
-    public function edit() {}
+    public function edit(Post $post)
+    {
+        return view('posts.edit')->with(['post' => $post]);
+    }
 
-    public function update() {}
+    public function update(StorePostRequest $request, Post $post)
+    {
+        if ($request->hasFile('photo')) {
 
-    public function delete() {}
+            if (isset($post->photo)) {
+                Storage::delete($post->photo);
+            }
+
+            $name = $request->file('photo')->getClientOriginalName();
+            $path = $request->file('photo')->storeAs('post-photos', $name);
+        }
+
+        $post->update([
+            'title' => $request->title,
+            'short_content' => $request->short_content,
+            'content' => $request->content,
+            'photo' => $path ?? $post->photo,
+        ]);
+
+        return redirect()->route('posts.show', ['post' => $post->id]);
+    }
+
+    public function destroy(Post $post)
+    {
+        if (isset($post->photo)) {
+            Storage::delete($post->photo);
+        }
+
+        $post->delete();
+
+        return redirect()->route('posts.index');
+    }
 }
