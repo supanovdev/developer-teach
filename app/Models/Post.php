@@ -11,6 +11,7 @@ class Post extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'title',
         'short_content',
         'content',
@@ -25,5 +26,5 @@ class Post extends Model
     public function comments()
     {
         return $this->hasMany(Comment::class);
-    }   
+    }
 }
